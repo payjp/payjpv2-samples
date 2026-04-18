@@ -15,6 +15,7 @@ Android / iOS サンプルと機能同等の Flutter 実装を提供し、同じ
 
 - **依存を最小化**。状態管理ライブラリや永続化ライブラリは導入しない
 - プラットフォーム固有コードは追加しない（`AndroidManifest.xml` と `Info.plist` でのスキーム登録のみ）
+- iOS は Swift Package Manager（SPM）経路で統合する。CocoaPods は非推奨化が進んでいるため `ios/Podfile` はコミットしない（`flutter run` 時に SPM 統合が自動で追加される）
 - Flutter 3.x / Dart 3.x 前提
 - 画面構成は iOS サンプル（単一 `ContentView`）寄りのシンプル構成にする
 

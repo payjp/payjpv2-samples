@@ -139,7 +139,7 @@ PAY.JP からの Webhook を受信します。`x-payjp-webhook-token` が `.env`
 ### Flutter
 
 1. `cd flutter && flutter pub get`
-2. iOS は `cd ios && pod install && cd ..`
+2. iOS は初回のみ `flutter config --enable-swift-package-manager`（CocoaPods は不要・Podfile もコミットしていません）
 3. `flutter run` でエミュレータ / シミュレータに展開。バックエンド URL 既定値は Android エミュレータが `http://10.0.2.2:3000`、iOS シミュレータが `http://localhost:3000`。
 4. 詳細は [`flutter/README.md`](flutter/README.md)。
 
