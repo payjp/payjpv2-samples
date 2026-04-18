@@ -9,6 +9,7 @@
 | [`android/`](android/) | Android アプリ（サンプル API と連携し、Checkout を開く） |
 | [`server/`](server/) | Node.js 製のサンプル API（商品一覧・Checkout Session 作成・Webhook 受信） |
 | [`ios/`](ios/) | iOS アプリ（SwiftUI・サンプル API と連携し Safari で Checkout を開く） |
+| [`flutter/`](flutter/) | Flutter アプリ（Android / iOS 共通・外部ブラウザで Checkout を開く） |
 
 ## 前提条件
 
@@ -134,6 +135,13 @@ PAY.JP からの Webhook を受信します。`x-payjp-webhook-token` が `.env`
 1. Xcode で `ios/PayJPCheckoutExample.xcodeproj` を開きます。
 2. シミュレータでは既定の `http://localhost:3000` のまま動かせます。実機は Mac の LAN IP に変更してください。
 3. 商品を選び、Safari で Checkout を開始します。
+
+### Flutter
+
+1. `cd flutter && flutter pub get`
+2. iOS は `cd ios && pod install && cd ..`
+3. `flutter run` でエミュレータ / シミュレータに展開。バックエンド URL 既定値は Android エミュレータが `http://10.0.2.2:3000`、iOS シミュレータが `http://localhost:3000`。
+4. 詳細は [`flutter/README.md`](flutter/README.md)。
 
 iOS アプリは `success_url` に戻った時点では「決済完了」ではなく、Webhook 確認待ちとして扱います。`success_url` は受付済みのシグナルであって、決済確定そのものではありません。
 
