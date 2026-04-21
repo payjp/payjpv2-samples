@@ -15,6 +15,7 @@ import {
   SafeAreaProvider,
   useSafeAreaInsets,
 } from 'react-native-safe-area-context';
+import {parseRedirect} from './src/checkout';
 
 const SUCCESS_URL = 'payjpcheckoutexample://checkout/success';
 const CANCEL_URL = 'payjpcheckoutexample://checkout/cancel';
@@ -24,15 +25,6 @@ type CheckoutSession = {id: string; url: string; status: string};
 
 const defaultBackendUrl = () =>
   Platform.OS === 'android' ? 'http://10.0.2.2:3000' : 'http://localhost:3000';
-
-function parseRedirect(url: string): 'success' | 'cancel' | null {
-  const prefix = 'payjpcheckoutexample://checkout';
-  if (!url.startsWith(prefix)) return null;
-  const path = url.slice(prefix.length).split('?')[0];
-  if (path === '/success') return 'success';
-  if (path === '/cancel') return 'cancel';
-  return null;
-}
 
 function App() {
   return (
