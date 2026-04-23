@@ -1,9 +1,9 @@
-import React, {useCallback, useEffect, useState} from 'react';
+import React, {useCallback, useState} from 'react';
 import {
   ActivityIndicator,
-  Linking,
   Platform,
   Pressable,
+  SafeAreaView,
   ScrollView,
   StatusBar,
   StyleSheet,
@@ -11,14 +11,12 @@ import {
   TextInput,
   View,
 } from 'react-native';
-import {
-  SafeAreaProvider,
-  useSafeAreaInsets,
-} from 'react-native-safe-area-context';
+import * as WebBrowser from 'expo-web-browser';
 import {parseRedirect} from './src/checkout';
 
-const SUCCESS_URL = 'payjpcheckoutexample://checkout/success';
-const CANCEL_URL = 'payjpcheckoutexample://checkout/cancel';
+const REDIRECT_PREFIX = 'payjpcheckoutexample://checkout';
+const SUCCESS_URL = `${REDIRECT_PREFIX}/success`;
+const CANCEL_URL = `${REDIRECT_PREFIX}/cancel`;
 
 type Product = {id: string; name: string; amount: number};
 type CheckoutSession = {id: string; url: string; status: string};
@@ -26,51 +24,13 @@ type CheckoutSession = {id: string; url: string; status: string};
 const defaultBackendUrl = () =>
   Platform.OS === 'android' ? 'http://10.0.2.2:3000' : 'http://localhost:3000';
 
-function App() {
-  return (
-    <SafeAreaProvider>
-      <StatusBar barStyle="dark-content" />
-      <HomeScreen />
-    </SafeAreaProvider>
-  );
-}
-
-function HomeScreen() {
-  const insets = useSafeAreaInsets();
+export default function App() {
   const [backendUrl, setBackendUrl] = useState(defaultBackendUrl());
   const [products, setProducts] = useState<Product[] | null>(null);
   const [selected, setSelected] = useState<Product | null>(null);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [resultMessage, setResultMessage] = useState<string | null>(null);
-  const [awaiting, setAwaiting] = useState(false);
-  const [lastHandled, setLastHandled] = useState<string | null>(null);
-
-  const handleUrl = useCallback(
-    (url: string) => {
-      if (lastHandled === url) return;
-      const kind = parseRedirect(url);
-      if (!kind) return;
-      setLastHandled(url);
-      setAwaiting(false);
-      if (kind === 'success') {
-        setResultMessage(
-          '決済受付が完了しました。Webhook での確定を確認してください。',
-        );
-      } else {
-        setResultMessage('キャンセルされました。');
-      }
-    },
-    [lastHandled],
-  );
-
-  useEffect(() => {
-    const sub = Linking.addEventListener('url', event => handleUrl(event.url));
-    Linking.getInitialURL().then(url => {
-      if (url) handleUrl(url);
-    });
-    return () => sub.remove();
-  }, [handleUrl]);
 
   const api = useCallback(
     (path: string, init?: RequestInit) =>
@@ -113,11 +73,25 @@ function HomeScreen() {
       });
       if (!res.ok) throw new Error(`HTTP ${res.status}: ${await res.text()}`);
       const session = (await res.json()) as CheckoutSession;
-      setLastHandled(null);
-      setAwaiting(true);
-      await Linking.openURL(session.url);
+      const outcome = await WebBrowser.openAuthSessionAsync(
+        session.url,
+        REDIRECT_PREFIX,
+      );
+      if (outcome.type === 'success' && outcome.url) {
+        const kind = parseRedirect(outcome.url);
+        if (kind === 'success') {
+          setResultMessage(
+            '決済受付が完了しました。Webhook での確定を確認してください。',
+          );
+        } else if (kind === 'cancel') {
+          setResultMessage('キャンセルされました。');
+        } else {
+          setResultMessage(`未知のリダイレクト: ${outcome.url}`);
+        }
+      } else if (outcome.type === 'cancel' || outcome.type === 'dismiss') {
+        setResultMessage('Checkout を閉じました。');
+      }
     } catch (e: unknown) {
-      setAwaiting(false);
       setError(String(e));
     } finally {
       setLoading(false);
@@ -129,120 +103,102 @@ function HomeScreen() {
     setSelected(null);
     setResultMessage(null);
     setError(null);
-    setAwaiting(false);
-    setLastHandled(null);
   };
 
   return (
-    <ScrollView
-      contentContainerStyle={[
-        styles.container,
-        {paddingTop: insets.top + 16, paddingBottom: insets.bottom + 16},
-      ]}>
-      <Text style={styles.title}>PAY.JP Checkout V2 (RN)</Text>
+    <SafeAreaView style={styles.flex}>
+      <StatusBar barStyle="dark-content" />
+      <ScrollView contentContainerStyle={styles.container}>
+        <Text style={styles.title}>PAY.JP Checkout V2 (Expo)</Text>
 
-      <Text style={styles.label}>バックエンド URL</Text>
-      <TextInput
-        style={styles.input}
-        value={backendUrl}
-        onChangeText={setBackendUrl}
-        autoCapitalize="none"
-        autoCorrect={false}
-        keyboardType="url"
-        placeholder="http://10.0.2.2:3000"
-      />
+        <Text style={styles.label}>バックエンド URL</Text>
+        <TextInput
+          style={styles.input}
+          value={backendUrl}
+          onChangeText={setBackendUrl}
+          autoCapitalize="none"
+          autoCorrect={false}
+          keyboardType="url"
+          placeholder="http://10.0.2.2:3000"
+        />
 
-      <Pressable
-        style={[styles.primary, loading && styles.disabled]}
-        onPress={fetchProducts}
-        disabled={loading}>
-        <Text style={styles.primaryText}>商品を取得</Text>
-      </Pressable>
+        <Pressable
+          style={[styles.primary, loading && styles.disabled]}
+          onPress={fetchProducts}
+          disabled={loading}>
+          <Text style={styles.primaryText}>商品を取得</Text>
+        </Pressable>
 
-      {loading && (
-        <ActivityIndicator style={styles.loader} size="large" />
-      )}
+        {loading && <ActivityIndicator style={styles.loader} size="large" />}
 
-      {error && (
-        <View style={styles.errorCard}>
-          <Text style={styles.errorText}>{error}</Text>
-        </View>
-      )}
+        {error && (
+          <View style={styles.errorCard}>
+            <Text style={styles.errorText}>{error}</Text>
+          </View>
+        )}
 
-      {products && (
-        <View>
-          <Text style={[styles.label, styles.sectionGap]}>商品一覧</Text>
-          {products.length === 0 && <Text>商品がありません</Text>}
-          {products.map(p => {
-            const isSelected = selected?.id === p.id;
-            return (
-              <Pressable
-                key={p.id}
-                style={[styles.row, isSelected && styles.rowSelected]}
-                onPress={() => setSelected(p)}>
-                <View
-                  style={[
-                    styles.radioOuter,
-                    isSelected && styles.radioOuterSelected,
-                  ]}>
-                  {isSelected && <View style={styles.radioInner} />}
-                </View>
-                <View style={styles.rowBody}>
-                  <Text style={styles.rowTitle}>{p.name}</Text>
-                  <Text style={styles.rowSub}>¥{p.amount} / {p.id}</Text>
-                </View>
-              </Pressable>
-            );
-          })}
-          <Pressable
-            style={[
-              styles.primary,
-              (!selected || loading) && styles.disabled,
-            ]}
-            onPress={startCheckout}
-            disabled={!selected || loading}>
-            <Text style={styles.primaryText}>Checkout を開く</Text>
-          </Pressable>
-        </View>
-      )}
+        {products && (
+          <View>
+            <Text style={[styles.label, styles.sectionGap]}>商品一覧</Text>
+            {products.length === 0 && <Text>商品がありません</Text>}
+            {products.map(p => {
+              const isSelected = selected?.id === p.id;
+              return (
+                <Pressable
+                  key={p.id}
+                  style={styles.row}
+                  onPress={() => setSelected(p)}>
+                  <View
+                    style={[
+                      styles.radioOuter,
+                      isSelected && styles.radioOuterSelected,
+                    ]}>
+                    {isSelected && <View style={styles.radioInner} />}
+                  </View>
+                  <View style={styles.rowBody}>
+                    <Text style={styles.rowTitle}>{p.name}</Text>
+                    <Text style={styles.rowSub}>
+                      ¥{p.amount} / {p.id}
+                    </Text>
+                  </View>
+                </Pressable>
+              );
+            })}
+            <Pressable
+              style={[
+                styles.primary,
+                (!selected || loading) && styles.disabled,
+              ]}
+              onPress={startCheckout}
+              disabled={!selected || loading}>
+              <Text style={styles.primaryText}>Checkout を開く</Text>
+            </Pressable>
+          </View>
+        )}
 
-      {awaiting && (
-        <View style={styles.card}>
-          <Text>
-            ブラウザで Checkout を表示中です。{'\n'}決済完了後、自動でこの画面に戻ります。
-          </Text>
-        </View>
-      )}
-
-      {resultMessage && (
-        <View style={styles.card}>
-          <Text>{resultMessage}</Text>
-          <Pressable style={styles.linkButton} onPress={reset}>
-            <Text style={styles.linkButtonText}>最初からやり直す</Text>
-          </Pressable>
-        </View>
-      )}
-    </ScrollView>
+        {resultMessage && (
+          <View style={styles.card}>
+            <Text>{resultMessage}</Text>
+            <Pressable style={styles.linkButton} onPress={reset}>
+              <Text style={styles.linkButtonText}>最初からやり直す</Text>
+            </Pressable>
+          </View>
+        )}
+      </ScrollView>
+    </SafeAreaView>
   );
 }
 
 const styles = StyleSheet.create({
+  flex: {flex: 1, backgroundColor: '#fff'},
   container: {
     paddingHorizontal: 16,
+    paddingVertical: 16,
     gap: 12,
   },
-  title: {
-    fontSize: 22,
-    fontWeight: '700',
-    marginBottom: 8,
-  },
-  label: {
-    fontSize: 13,
-    color: '#555',
-  },
-  sectionGap: {
-    marginTop: 16,
-  },
+  title: {fontSize: 22, fontWeight: '700', marginBottom: 8},
+  label: {fontSize: 13, color: '#555'},
+  sectionGap: {marginTop: 16},
   input: {
     borderWidth: 1,
     borderColor: '#888',
@@ -257,43 +213,20 @@ const styles = StyleSheet.create({
     borderRadius: 24,
     alignItems: 'center',
   },
-  primaryText: {
-    color: '#fff',
-    fontWeight: '600',
-    fontSize: 16,
-  },
-  disabled: {
-    opacity: 0.5,
-  },
-  loader: {
-    marginVertical: 8,
-  },
-  errorCard: {
-    backgroundColor: '#fde7e7',
-    padding: 12,
-    borderRadius: 8,
-  },
-  errorText: {
-    color: '#842029',
-  },
+  primaryText: {color: '#fff', fontWeight: '600', fontSize: 16},
+  disabled: {opacity: 0.5},
+  loader: {marginVertical: 8},
+  errorCard: {backgroundColor: '#fde7e7', padding: 12, borderRadius: 8},
+  errorText: {color: '#842029'},
   row: {
     flexDirection: 'row',
     alignItems: 'center',
     paddingVertical: 10,
     gap: 12,
   },
-  rowSelected: {},
-  rowBody: {
-    flex: 1,
-  },
-  rowTitle: {
-    fontSize: 16,
-    marginBottom: 2,
-  },
-  rowSub: {
-    color: '#666',
-    fontSize: 13,
-  },
+  rowBody: {flex: 1},
+  rowTitle: {fontSize: 16, marginBottom: 2},
+  rowSub: {color: '#666', fontSize: 13},
   radioOuter: {
     width: 22,
     height: 22,
@@ -303,27 +236,14 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     justifyContent: 'center',
   },
-  radioOuterSelected: {
-    borderColor: '#3a5a85',
-  },
+  radioOuterSelected: {borderColor: '#3a5a85'},
   radioInner: {
     width: 10,
     height: 10,
     borderRadius: 5,
     backgroundColor: '#3a5a85',
   },
-  card: {
-    backgroundColor: '#f4f4f4',
-    padding: 12,
-    borderRadius: 8,
-  },
-  linkButton: {
-    marginTop: 8,
-  },
-  linkButtonText: {
-    color: '#3a5a85',
-    fontWeight: '600',
-  },
+  card: {backgroundColor: '#f4f4f4', padding: 12, borderRadius: 8},
+  linkButton: {marginTop: 8},
+  linkButtonText: {color: '#3a5a85', fontWeight: '600'},
 });
-
-export default App;
