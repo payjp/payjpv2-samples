@@ -14,7 +14,7 @@
 
 ## 前提条件
 
-- Node.js 18 以上
+- Node.js 22 以上 (CI 検証バージョン)
 - PAY.JP アカウント
 - PAY.JP ダッシュボードで Price オブジェクトを作成済み
 - PayPay を使うテスト環境
@@ -48,7 +48,7 @@ PAYJP_WEBHOOK_SECRET=your_webhook_secret
 
 - `PAYJP_SAMPLE_PRODUCT_NAME`: `/products` で返すサンプル商品名。未設定時は `テスト商品`
 - `PAYJP_SAMPLE_PRODUCT_AMOUNT`: `/products` で返すサンプル金額。未設定時は `100`
-- `ALLOWED_ORIGINS`: CORS 許可オリジン。カンマ区切り。未設定時は全オリジン許可
+- `ALLOWED_ORIGINS`: CORS 許可オリジン。カンマ区切り。未設定時は全オリジン許可（**本番環境では必ず設定してください**）
 - `PORT`: サーバーポート。既定値は `3000`
 
 ### 3. サーバーを起動

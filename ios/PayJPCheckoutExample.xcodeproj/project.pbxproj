@@ -352,7 +352,7 @@
 					"@executable_path/Frameworks",
 				);
 				MARKETING_VERSION = 1.0;
-				PRODUCT_BUNDLE_IDENTIFIER = "com.exmaple.jp.pay.example-v2-checkout.PayJPCheckoutExample";
+				PRODUCT_BUNDLE_IDENTIFIER = "com.example.jp.pay.example-v2-checkout.PayJPCheckoutExample";
 				PRODUCT_NAME = "$(TARGET_NAME)";
 				STRING_CATALOG_GENERATE_SYMBOLS = YES;
 				SWIFT_APPROACHABLE_CONCURRENCY = YES;
@@ -384,7 +384,7 @@
 					"@executable_path/Frameworks",
 				);
 				MARKETING_VERSION = 1.0;
-				PRODUCT_BUNDLE_IDENTIFIER = "com.exmaple.jp.pay.example-v2-checkout.PayJPCheckoutExample";
+				PRODUCT_BUNDLE_IDENTIFIER = "com.example.jp.pay.example-v2-checkout.PayJPCheckoutExample";
 				PRODUCT_NAME = "$(TARGET_NAME)";
 				STRING_CATALOG_GENERATE_SYMBOLS = YES;
 				SWIFT_APPROACHABLE_CONCURRENCY = YES;
@@ -405,7 +405,7 @@
 				GENERATE_INFOPLIST_FILE = YES;
 				IPHONEOS_DEPLOYMENT_TARGET = 26.1;
 				MARKETING_VERSION = 1.0;
-				PRODUCT_BUNDLE_IDENTIFIER = "com.exmaple.jp.pay.example-v2-checkout.PayJPCheckoutExampleTests";
+				PRODUCT_BUNDLE_IDENTIFIER = "com.example.jp.pay.example-v2-checkout.PayJPCheckoutExampleTests";
 				PRODUCT_NAME = "$(TARGET_NAME)";
 				SWIFT_APPROACHABLE_CONCURRENCY = YES;
 				SWIFT_DEFAULT_ACTOR_ISOLATION = MainActor;
@@ -426,7 +426,7 @@
 				GENERATE_INFOPLIST_FILE = YES;
 				IPHONEOS_DEPLOYMENT_TARGET = 26.1;
 				MARKETING_VERSION = 1.0;
-				PRODUCT_BUNDLE_IDENTIFIER = "com.exmaple.jp.pay.example-v2-checkout.PayJPCheckoutExampleTests";
+				PRODUCT_BUNDLE_IDENTIFIER = "com.example.jp.pay.example-v2-checkout.PayJPCheckoutExampleTests";
 				PRODUCT_NAME = "$(TARGET_NAME)";
 				SWIFT_APPROACHABLE_CONCURRENCY = YES;
 				SWIFT_DEFAULT_ACTOR_ISOLATION = MainActor;
