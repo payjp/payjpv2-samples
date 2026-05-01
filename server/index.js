@@ -1,4 +1,5 @@
 require('dotenv').config();
+const crypto = require('crypto');
 const express = require('express');
 const cors = require('cors');
 
@@ -7,6 +8,9 @@ const app = express();
 const ALLOWED_ORIGINS = process.env.ALLOWED_ORIGINS
   ? process.env.ALLOWED_ORIGINS.split(',').map(o => o.trim())
   : undefined;
+if (!ALLOWED_ORIGINS) {
+  console.warn('[security] ALLOWED_ORIGINS が未設定のため全オリジンを許可します。本番環境では必ず設定してください。');
+}
 app.use(cors(ALLOWED_ORIGINS ? { origin: ALLOWED_ORIGINS } : undefined));
 
 app.use('/webhook', express.raw({ type: 'application/json' }));
@@ -102,6 +106,10 @@ app.post('/create-checkout-session', async (req, res) => {
       return res.status(400).json({ error: '必須パラメータが不足しています' });
     }
 
+    if (!Number.isInteger(quantity) || quantity < 1 || quantity > 100) {
+      return res.status(400).json({ error: 'quantity は 1〜100 の整数で指定してください' });
+    }
+
     if (!isAllowedRedirectUrl(success_url) || !isAllowedRedirectUrl(cancel_url)) {
       return res.status(400).json({ error: '許可されていないURLスキームです' });
     }
@@ -157,7 +165,12 @@ app.post('/webhook', (req, res) => {
     return res.status(500).json({ error: 'Webhook secret is not configured' });
   }
 
-  if (webhookToken !== expectedToken) {
+  const tokenBuf = Buffer.from(String(webhookToken ?? ''), 'utf8');
+  const expectedBuf = Buffer.from(expectedToken, 'utf8');
+  if (
+    tokenBuf.length !== expectedBuf.length ||
+    !crypto.timingSafeEqual(tokenBuf, expectedBuf)
+  ) {
     console.error('Invalid webhook token');
     return res.status(401).json({ error: 'Invalid webhook token' });
   }
